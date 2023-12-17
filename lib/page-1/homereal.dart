@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:marquee/marquee.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 import 'package:myapp/page-1/perfil.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, Key? key2, required this.userId});
+  const HomePage({Key? key, required this.userId}) : super(key: key);
 
   final int userId;
 
@@ -15,6 +16,23 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   bool isEditing = false;
   TextEditingController textEditingController = TextEditingController();
+  late KeyboardVisibilityController _keyboardVisibilityController;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Inicializa el controlador de visibilidad del teclado
+    _keyboardVisibilityController = KeyboardVisibilityController();
+
+    // Suscríbete a los cambios de visibilidad del teclado
+    _keyboardVisibilityController.onChange.listen((bool visible) {
+      setState(() {
+        // Actualiza el estado de edición según la visibilidad del teclado
+        isEditing = visible;
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,23 +83,27 @@ class _HomePageState extends State<HomePage> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: isEditing
-                              ? TextField(
-                                  controller: textEditingController,
-                                  style: TextStyle(
-                                    fontSize: textSize,
+                              ? Container(
+                                  padding: const EdgeInsets.only(top: 8.0),
+                                  child: TextField(
+                                    controller: textEditingController,
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                    ),
+                                    decoration: const InputDecoration(
+                                      hintText: '',
+                                      border: InputBorder.none,
+                                    ),
+                                    textAlignVertical: TextAlignVertical.center,
+                                    maxLines: 1,
+                                    onEditingComplete: () {
+                                      if (textEditingController.text.isEmpty) {
+                                        setState(() {
+                                          isEditing = false;
+                                        });
+                                      }
+                                    },
                                   ),
-                                  decoration: const InputDecoration(
-                                    hintText: '¿Dónde vas a estacionar hoy?',
-                                    border: InputBorder.none,
-                                  ),
-                                  maxLines: 1,
-                                  onEditingComplete: () {
-                                    if (textEditingController.text.isEmpty) {
-                                      setState(() {
-                                        isEditing = false;
-                                      });
-                                    }
-                                  },
                                 )
                               : Marquee(
                                   text: '¿Dónde vas a estacionar hoy?',
@@ -118,7 +140,7 @@ class _HomePageState extends State<HomePage> {
                   ),
 
                   Padding(
-                    padding: const EdgeInsets.only(top: 30.0),
+                    padding: const EdgeInsets.only(top: 20.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -205,21 +227,25 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ),
-        bottomNavigationBar: BottomNavigationBar(
-          type: BottomNavigationBarType.fixed,
-          items: [
-            _buildNavBarItem('Inicio', 'assets/page-1/images/iconly-bold-home-wWC.png', MediaQuery.of(context).size.width, selected: true, index: 0),
-            _buildNavBarItem('Mapa', 'assets/page-1/images/gps-3.png', MediaQuery.of(context).size.width, index: 1),
-            _buildNavBarItem('Actividad', 'assets/page-1/images/vector-38G.png', MediaQuery.of(context).size.width, index: 2),
-            _buildNavBarItem('Cuenta', 'assets/page-1/images/vector-n4C.png', MediaQuery.of(context).size.width, index: 3),
-          ],
+        bottomNavigationBar: Container(
+          margin: EdgeInsets.zero, // Establece el margen a cero
+          child: BottomNavigationBar(
+            type: BottomNavigationBarType.fixed,
+            items: [
+              _buildNavBarItem('Inicio', 'assets/page-1/images/iconly-bold-home-wWC.png', MediaQuery.of(context).size.width, selected: true, index: 0),
+              _buildNavBarItem('Mapa', 'assets/page-1/images/gps-3.png', MediaQuery.of(context).size.width, index: 1),
+              _buildNavBarItem('Actividad', 'assets/page-1/images/vector-38G.png', MediaQuery.of(context).size.width, index: 2),
+              _buildNavBarItem('Cuenta', 'assets/page-1/images/vector-n4C.png', MediaQuery.of(context).size.width, index: 3),
+            ],
+          ),
         ),
       ),
     );
   }
 
   BottomNavigationBarItem _buildNavBarItem(String title, String imagePath, double screenWidth, {bool selected = false, int index = 0}) {
-    double iconSize = screenWidth < 600 ? 20.0 : 24.0;
+    double iconSize = screenWidth < 600 ? 26.0 : 27.0;
+    double containerPadding = 0.0; // Ajusta este valor según tus necesidades
     Color iconColor = selected ? Colors.black : Colors.grey;
     FontWeight fontWeight = selected ? FontWeight.bold : FontWeight.normal;
 
@@ -233,21 +259,24 @@ class _HomePageState extends State<HomePage> {
             );
           }
         },
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4.0),
-              child: Image.asset(
-                imagePath,
-                height: iconSize,
-                color: iconColor,
+        child: Container(
+          padding: EdgeInsets.all(containerPadding),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 0.0), // Ajusta este valor según tus necesidades
+                child: Image.asset(
+                  imagePath,
+                  height: iconSize,
+                  color: iconColor,
+                ),
               ),
-            ),
-            Text(
-              title,
-              style: TextStyle(fontSize: 12.0, fontWeight: fontWeight),
-            ),
-          ],
+              Text(
+                title,
+                style: TextStyle(fontSize: 12.0, fontWeight: fontWeight),
+              ),
+            ],
+          ),
         ),
       ),
       label: '',
@@ -363,7 +392,6 @@ class _HomePageState extends State<HomePage> {
                   style: const TextStyle(
                     color: Color.fromARGB(255, 207, 195, 84),
                     fontSize: 14.0,
-                    
                   ),
                 ),
               ],

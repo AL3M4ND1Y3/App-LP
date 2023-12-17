@@ -19,6 +19,7 @@ class _Scene2State extends State<Scene2> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
   int? userId;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -126,11 +127,14 @@ class _Scene2State extends State<Scene2> with SingleTickerProviderStateMixin {
             setState(() {
               rememberMe = !rememberMe;
               if (rememberMe) {
-                _controller.forward();
+                _controller.forward().then((_) {
+                  saveRememberMeStatus();
+                });
               } else {
-                _controller.reverse();
+                _controller.reverse().then((_) {
+                  saveRememberMeStatus();
+                });
               }
-              saveRememberMeStatus();
             });
           },
           child: Container(
@@ -151,10 +155,10 @@ class _Scene2State extends State<Scene2> with SingleTickerProviderStateMixin {
                 },
                 child: rememberMe
                     ? const Icon(
-                        Icons.check,
-                        size: 20,
-                        color: Colors.black,
-                      )
+                    Icons.check,
+                    size: 20,
+                    color: Colors.black,
+                  )
                     : null,
               ),
             ),
@@ -178,15 +182,19 @@ class _Scene2State extends State<Scene2> with SingleTickerProviderStateMixin {
       height: 53,
       decoration: BoxDecoration(
         border: Border.all(color: Colors.black),
-        color: const Color(0xfffbe205),
+        color: _isLoading ? Colors.white : const Color(0xfffbe205),
         borderRadius: BorderRadius.circular(40),
       ),
       child: TextButton(
-        onPressed: login,
-        child: const Text(
-          'Iniciar Sesión',
-          style: TextStyle(fontSize: 18, color: Colors.black),
-        ),
+        onPressed: _isLoading ? null : login,
+        child: _isLoading
+            ? const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+              )
+            : const Text(
+                'Iniciar Sesión',
+                style: TextStyle(fontSize: 18, color: Colors.black),
+              ),
       ),
     );
   }
@@ -245,27 +253,41 @@ class _Scene2State extends State<Scene2> with SingleTickerProviderStateMixin {
   }
 
   void login() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     String email = emailController.text;
     String password = passwordController.text;
 
-    final response = await http.post(
-      Uri.parse('https://basededatoslinkinp.000webhostapp.com/login.php'),
-      body: {
-        'email': email,
-        'password': password,
-      },
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('https://basededatoslinkinp.000webhostapp.com/login.php'),
+        body: {
+          'email': email,
+          'password': password,
+        },
+      );
 
-    if (response.statusCode == 200) {
-      var data = json.decode(response.body);
-      if (data['success']) {
-        userId = data['user_id'];
-        navigateToHomePage();
+      if (response.statusCode == 200) {
+        var data = json.decode(response.body);
+        if (data['success']) {
+          userId = data['user_id'];
+          saveRememberMeStatus();
+          navigateToHomePage();
+        } else {
+          showAlertDialog(context, 'Error', 'El correo y/o la contraseña son incorrectos.');
+        }
       } else {
-        showAlertDialog(context, 'Error', 'El correo y/o la contraseña son incorrectos.');
+        showAlertDialog(context, 'Error', 'Error en la solicitud HTTP: ${response.statusCode}');
       }
-    } else {
-      showAlertDialog(context, 'Error', 'Error en la solicitud HTTP: ${response.statusCode}');
+    } catch (e) {
+      print('Error: $e');
+      showAlertDialog(context, 'Error', 'Ocurrió un error durante la autenticación.');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -315,7 +337,7 @@ class _Scene2State extends State<Scene2> with SingleTickerProviderStateMixin {
             const Text(
               'Iniciar Sesión',
               style: TextStyle(
-                fontSize: 34,
+                fontSize: 36,
                 fontWeight: FontWeight.bold,
               ),
             ),
